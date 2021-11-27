@@ -19,11 +19,10 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,20 +40,27 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
-
+uint8_t str[1];
+bool RxCompleted = false;
+bool TxCompleted = true;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+	int counter, i = 0;
+	bool state = false;
+	bool state2 = false;
 /* USER CODE END 0 */
 
 /**
@@ -85,8 +91,9 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_UART_Receive_IT(&huart1, str, 1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -94,14 +101,29 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_10);
-	  HAL_Delay(500);
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_11);
-	  HAL_Delay(500);
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_12);
-	  HAL_Delay(500);
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_13);
-	  HAL_Delay(500);
+	  if (str[0] == '0') HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
+	  if (str[0] == '1') HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+	  if (str[0] == '2') HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+	  if (str[0] == '3') HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+	  if (str[0] == 'a')
+	  {
+		  if(state == true)
+		  {
+			  if(i != counter)
+			  {
+				  state = false;
+			  }
+		  }
+		  if(state == false)
+		  {
+			  state2 = !state2;
+			  state = true;
+			  i = counter;
+		  }
+	  }
+	  if(state2 == true) HAL_GPIO_WritePin(LED1_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+	  if(state2 == false) HAL_GPIO_WritePin(LED1_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -142,7 +164,89 @@ void SystemClock_Config(void)
   }
 }
 
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 9600;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_GPIO_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, LED3_Pin|LED2_Pin|LED1_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pins : LED3_Pin LED2_Pin LED1_Pin */
+  GPIO_InitStruct.Pin = LED3_Pin|LED2_Pin|LED1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+}
+
 /* USER CODE BEGIN 4 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart == &huart1) {
+		RxCompleted = true;
+
+		if (TxCompleted == true) {
+			TxCompleted = false;
+			HAL_UART_Transmit_IT(&huart1, str, 1);
+			counter++;
+		}
+	}
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart == &huart1) {
+		TxCompleted = true;
+
+		if (RxCompleted == true) {
+			RxCompleted = false;
+			HAL_UART_Receive_IT(&huart1, str, 1);
+			counter++;
+		}
+	}
+}
 
 /* USER CODE END 4 */
 

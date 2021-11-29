@@ -59,7 +59,7 @@ static void MX_USART1_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 	int counter, i = 0;
-	bool state = false;
+	bool state = true;
 	bool state2 = false;
 /* USER CODE END 0 */
 
@@ -101,12 +101,15 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  if (str[0] == '0') HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
-	  if (str[0] == '1') HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+	  if (str[0] == '0') HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+	  if (str[0] == '1') HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
 	  if (str[0] == '2') HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
 	  if (str[0] == '3') HAL_GPIO_WritePin(LED1_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-	  if (str[0] == 'a')
-	  {
+	  if (str[0] == 'a' && HAL_GPIO_ReadPin(GPIOA, LED3_Pin) == 1 && state == true) HAL_GPIO_WritePin(LED1_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+	  if (str[0] == 'a' && HAL_GPIO_ReadPin(GPIOA, LED3_Pin) == 1  && state == false) HAL_GPIO_WritePin(LED1_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
+	  if (str[0] == 'a' && HAL_GPIO_ReadPin(GPIOA, LED3_Pin) == 0  && state == true) HAL_GPIO_WritePin(LED1_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
+	  if (str[0] == 'a' && HAL_GPIO_ReadPin(GPIOA, LED3_Pin) == 0  && state == false) HAL_GPIO_WritePin(LED1_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+	  /*{
 		  if(state == true)
 		  {
 			  if(i != counter)
@@ -121,9 +124,9 @@ int main(void)
 			  i = counter;
 		  }
 	  }
-	  if(state2 == true) HAL_GPIO_WritePin(LED1_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
-	  if(state2 == false) HAL_GPIO_WritePin(LED1_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
-
+	  if(state2) HAL_GPIO_WritePin(LED1_GPIO_Port, LED3_Pin, GPIO_PIN_RESET);
+	  if(!state2) HAL_GPIO_WritePin(LED1_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
+*/
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -230,7 +233,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		if (TxCompleted == true) {
 			TxCompleted = false;
 			HAL_UART_Transmit_IT(&huart1, str, 1);
-			counter++;
 		}
 	}
 }
@@ -243,7 +245,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 		if (RxCompleted == true) {
 			RxCompleted = false;
 			HAL_UART_Receive_IT(&huart1, str, 1);
-			counter++;
+			state = !state;
 		}
 	}
 }
